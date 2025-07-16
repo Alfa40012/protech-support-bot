@@ -1,76 +1,82 @@
-from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InputFile
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+import re
 
+# ✅ توكن البوت
 TOKEN = "7579051023:AAHO56s_EMzenHUKPpuojzJf-KRKykJC10I"
 
-# القوائم حسب اللغة
-menu_ar = [
-    ["📡 تشخيص MAC", "🎥 تحميل السوفت"],
-    ["📺 ملف قنوات", "🔁 تجديد الاشتراك"],
-    ["💬 تواصل واتساب"]
+# ✅ صورة اللوجو (ارفعها عندك أو استخدم ملف محلي مؤقتًا)
+LOGO_PATH = "protech_logo.jpg"  # حط هنا اسم ملف اللوجو الموجود بجوار السكربت
+
+# ✅ روابط مهمة
+WHATSAPP_URL = "https://wa.me/message/2JZ4HHC5JOSFC1"
+CHANNELS_URL = "https://www.mediafire.com/file/vm2khd0dnemy7ro/%25D8%25B5%25D9%2586_%25D8%25A8%25D9%2584%25D8%25B5_%25D8%25AF%25D8%25A7%25D9%2583%25D9%2589_%25D9%2586%25D8%25A7%25D9%258A%25D9%2584_%25D8%25B9%25D8%25B1%25D8%25A8%25D9%2589.bin/file"
+WEBSITE_URL = "https://www.rafal.giize.com/"
+
+# ✅ المنيو التفاعلي بالعربي
+menu = [
+    ["📡 تشخيص الجهاز", "🎥 تحميل السوفت"],
+    ["💡 حلول سريعة", "📲 تفعيل IPTV"],
+    ["📞 تواصل مع الدعم", "📍 فنيين معتمدين"],
+    ["📺 ملف القنوات", "💬 تواصل واتساب"]
 ]
 
-# المستخدمين ولغتهم
-user_lang = {}
-
-# رسالة ترحيب
+# ✅ أمر البدء
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.message.from_user.id
-    user_lang[user_id] = None  # إعادة اللغة لاختيار جديد
+    keyboard = ReplyKeyboardMarkup(menu, resize_keyboard=True)
+    chat_id = update.effective_chat.id
 
-    # أرسل صورة اللوجو
-    await update.message.reply_photo(
-        photo="https://i.imgur.com/k8D0Omv.png",  # رابط صورة اللوجو
-        caption="🔰 PROTECH SUPPORT\n\n👋 مرحبًا بك في البوت الرسمي للدعم الفني\n\nيرجى اختيار اللغة:",
-        reply_markup=ReplyKeyboardMarkup([["🇸🇦 العربية", "🇬🇧 English"]], resize_keyboard=True)
+    # إرسال اللوجو أولاً
+    try:
+        with open(LOGO_PATH, "rb") as logo:
+            await context.bot.send_photo(chat_id=chat_id, photo=logo)
+    except Exception as e:
+        print("❌ لم يتم العثور على اللوجو:", e)
+
+    await update.message.reply_text(
+        "👋 أهلاً بك في دعم PROTECH الرسمي\n\nاختر الخدمة التي تحتاجها:",
+        reply_markup=keyboard
     )
 
-# التعامل مع الرسائل
+# ✅ التعامل مع الرسائل
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.message.from_user.id
-    msg = update.message.text
+    msg = update.message.text.strip()
+    chat_id = update.effective_chat.id
 
-    # تحديد اللغة
-    if msg == "🇸🇦 العربية":
-        user_lang[user_id] = "ar"
-        keyboard = ReplyKeyboardMarkup(menu_ar, resize_keyboard=True)
-        await update.message.reply_text("✅ تم اختيار اللغة العربية.\nاختر من القائمة:", reply_markup=keyboard)
+    # أوامر بداية
+    if msg.lower() in ["start", "/start", "ابدأ"]:
+        await start(update, context)
         return
 
-    elif msg == "🇬🇧 English":
-        await update.message.reply_text("❌ English support coming soon.")
+    # تحقق من MAC تلقائيًا
+    if re.match(r"^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$", msg):
+        await update.message.reply_text("✅ تم استلام MAC، جارٍ التحقق...")
         return
 
-    # الردود العربية
-    if user_lang.get(user_id) == "ar":
-        if "MAC" in msg or ":" in msg:
-            await update.message.reply_text("📡 من فضلك أرسل رقم MAC مثل:\n`00:1A:79:12:34:56`")
-        elif "السوفت" in msg:
-            await update.message.reply_text("🎥 من فضلك اختر موديل الجهاز:\n- Protech Mini\n- Protech X5\n- Protech Ultra Max")
-        elif "قنوات" in msg:
-            await update.message.reply_text(
-                "📺 أحدث ملف قنوات - نايل سات عربي\n\n"
-                "⬇️ لتحميل الملف:\n"
-                "[اضغط هنا](https://www.mediafire.com/file/vm2khd0dnemy7ro/...)",
-                parse_mode="Markdown"
-            )
-        elif "الاشتراك" in msg:
-            await update.message.reply_text("🔁 أرسل رقم الاشتراك أو الكود لتجديد الخدمة.")
-        elif "واتساب" in msg:
-            whatsapp_button = InlineKeyboardMarkup([
-                [InlineKeyboardButton("📞 اضغط للتواصل", url="https://wa.me/message/2JZ4HHC5JOSFC1")]
-            ])
-            await update.message.reply_text("💬 تواصل مباشر عبر واتساب:", reply_markup=whatsapp_button)
-        else:
-            await update.message.reply_text("❓ لم أفهم، اختر من القائمة.")
-
+    # الأوامر
+    if "تشخيص" in msg:
+        await update.message.reply_text("📡 أرسل MAC أو SN للجهاز الآن.")
+    elif "السوفت" in msg:
+        await update.message.reply_text("🎥 سيتم توفير روابط السوفت المناسب حسب الموديل قريبًا.")
+    elif "حلول" in msg:
+        await update.message.reply_text("💡 أكثر المشاكل:\n- تهنيج\n- IPTV لا يعمل\n🔁 جرب إعادة التشغيل.")
+    elif "IPTV" in msg:
+        await update.message.reply_text("📲 أرسل كود التفعيل الخاص بك.")
+    elif "الدعم" in msg:
+        await update.message.reply_text("📞 للتواصل: @ProTechSupportTeam")
+    elif "فنيين" in msg:
+        await update.message.reply_text("📍 أرسل موقعك وسنخبرك بأقرب فني معتمد.")
+    elif "القنوات" in msg:
+        await update.message.reply_text(f"📺 ملف قنوات نايل سات (عربي):\n[اضغط هنا لتحميله]({CHANNELS_URL})", parse_mode="Markdown")
+    elif "واتساب" in msg:
+        await update.message.reply_text(f"💬 تواصل مع خدمة العملاء عبر واتساب:\n[اضغط هنا]({WHATSAPP_URL})", parse_mode="Markdown")
     else:
-        await update.message.reply_text("👋 من فضلك اختر اللغة أولاً:", reply_markup=ReplyKeyboardMarkup([["🇸🇦 العربية", "🇬🇧 English"]], resize_keyboard=True))
+        await update.message.reply_text("❓ لم أفهم طلبك، الرجاء اختيار خيار من القائمة.")
 
-# تشغيل البوت
+# ✅ إعداد التطبيق
 app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle))
 
-print("✅ البوت شغال الآن...")
+print("✅ البوت يعمل الآن...")
 app.run_polling()
