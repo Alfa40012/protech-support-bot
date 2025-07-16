@@ -1,62 +1,75 @@
-import logging
-from aiogram import Bot, Dispatcher, types, executor
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 # بيانات البوت
-API_TOKEN = '7579051023:AAHO56s_EMzenHUKPpuojzJf-KRKykJC10I'
+BOT_TOKEN = "7579051023:AAHO56s_EMzenHUKPpuojzJf-KRKykJC10I"
 
-# إعدادات اللوج
-logging.basicConfig(level=logging.INFO)
+# رسالة الترحيب
+WELCOME_TEXT = """
+🎉 أهلاً بك في بوت الدعم الفني لشركة PROTECH IPTV!
 
-bot = Bot(token=API_TOKEN)
-dp = Dispatcher(bot)
+اختر الخدمة التي تحتاجها من القائمة أدناه، أو أرسل لنا استفسارك مباشرة.
 
-# ====== لوحة التحكم الأساسية ======
-def main_menu():
-    kb = InlineKeyboardMarkup(row_width=2)
-    kb.add(
-        InlineKeyboardButton("📥 تحميل السوفت", callback_data="soft"),
-        InlineKeyboardButton("📡 ملف قنوات نايل سات", callback_data="channels"),
-        InlineKeyboardButton("💳 تفعيل IPTV", callback_data="iptv"),
-        InlineKeyboardButton("🛠 دعم فني مباشر", callback_data="support"),
-        InlineKeyboardButton("📞 تواصل واتساب", url="https://wa.me/message/2JZ4HHC5JOSFC1"),
-    )
-    return kb
+🛡 البوت يعمل 24/7 لخدمتك.
+"""
 
-# ====== رسالة ترحيب أول مرة ======
-@dp.message_handler(commands=["start"])
-async def start_cmd(message: Message):
-    await message.answer("👋 مرحبًا بك في بوت الدعم الفني PROTECH.\nاختر من القائمة:", reply_markup=main_menu())
+# منيو البداية
+def start_menu():
+    keyboard = [
+        [
+            InlineKeyboardButton("📥 تحميل السوفت", callback_data="soft"),
+            InlineKeyboardButton("📡 ملف قنوات نايل سات", callback_data="channels"),
+        ],
+        [
+            InlineKeyboardButton("💳 تفعيل IPTV", callback_data="iptv"),
+        ],
+        [
+            InlineKeyboardButton("📶 مشاكل الإنترنت", callback_data="net"),
+        ],
+        [
+            InlineKeyboardButton("🛠 دعم فني مباشر", callback_data="support"),
+            InlineKeyboardButton("📞 تواصل واتساب", url="https://wa.me/message/2JZ4HHC5JOSFC1"),
+        ],
+    ]
+    return InlineKeyboardMarkup(keyboard)
 
-@dp.message_handler()
-async def on_any_text(message: types.Message):
-    text = message.text.strip()
+# أمر /start
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(WELCOME_TEXT, reply_markup=start_menu())
 
-    if len(text) == 12 and ":" not in text and text.upper().startswith("00"):
-        await message.reply(f"✅ تم استقبال MAC: `{text}` بنجاح.\nسيتم الرد عليك قريبًا.", parse_mode="Markdown")
-    elif any(x in text.lower() for x in ["استرا", "سالكوم", "تايجر", "جي اكس", "h265", "h1", "gx", "xtream", "iptv"]):
-        await message.reply("📌 تم تحديد نوع الجهاز.\nيرجى الآن كتابة اسم السيرفر أو إرسال MAC.")
-    else:
-        await message.reply("📋 اختر الخدمة التي تحتاجها من القائمة:", reply_markup=main_menu())
-
-# ====== الضغط على الأزرار ======
-@dp.callback_query_handler(lambda c: True)
-async def on_callback(callback: types.CallbackQuery):
-    data = callback.data
+# الرد على الأزرار
+async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    data = query.data
 
     if data == "soft":
-        await callback.message.answer("📥 اختر نوع جهازك لتحميل السوفت.\n(مستقبلاً سيتم التحديد تلقائيًا)")
+        await query.edit_message_text("📥 لتحميل السوفت، اضغط هنا:\n[تحميل السوفت](https://www.mediafire.com/file/vm2khd0dnemy7ro/soft.bin)", parse_mode="Markdown")
     elif data == "channels":
-        await callback.message.answer_document(
-            types.InputFile.from_url("https://www.mediafire.com/file/vm2khd0dnemy7ro/file"),
-            caption="✅ تم إرسال ملف القنوات (نايل سات) بنجاح."
-        )
+        await query.edit_message_text("📡 لتحميل ملف القنوات (نايل سات عربي)، اضغط هنا:\n[ملف القنوات](https://www.mediafire.com/file/vm2khd0dnemy7ro/soft.bin)", parse_mode="Markdown")
     elif data == "iptv":
-        await callback.message.answer("💳 من فضلك اكتب نوع الجهاز + اسم السيرفر المراد التفعيل عليه.")
+        await query.edit_message_text("💳 من فضلك أرسل:\n- نوع الجهاز\n- MAC Address (ماك الجهاز)\n- اسم السيرفر المطلوب تفعيله")
     elif data == "support":
-        await callback.message.answer("🛠 فريق الدعم الفني جاهز لخدمتك.\nيرجى إرسال المشكلة أو MAC الخاص بجهازك.")
-    await callback.answer()
+        await query.edit_message_text("🛠 يرجى إرسال مشكلتك بالتفصيل وسيتم الرد عليك من فريق الدعم.\n\n🔄 أو تواصل مباشرة عبر واتساب:\nhttps://wa.me/message/2JZ4HHC5JOSFC1")
+    elif data == "net":
+        await query.edit_message_text("📶 لحل مشاكل الإنترنت:\n\n1. افصل فيشة الراوتر وشغله تاني.\n2. جرب تعمل هوت سبوت من الموبايل للرسيفر.\n3. لو المشكلة مستمرة، جرب من شبكة تانية.\n4. أو توجّه لأقرب مركز صيانة.")
 
-# ====== تشغيل البوت ======
-if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+# الرد على إرسال MAC أو أي استفسار
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if ":" in text and len(text) >= 12:
+        await update.message.reply_text("✅ تم استلام MAC: " + text + "\nجاري التحقق من البيانات وسيتم التواصل معك قريبًا.")
+    else:
+        await update.message.reply_text("📬 شكرًا لتواصلك معنا، سيتم الرد عليك قريبًا من الدعم الفني.")
+
+# تشغيل البوت
+def main():
+    app = Application.builder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(handle_callback))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    print("✅ BOT IS RUNNING...")
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
