@@ -16,7 +16,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message.text
     if "تشخيص" in msg:
-        await update.message.reply_text("📡 أرسل كود الجهاز (MAC أو SN).")
+        await update.message.reply_text("📡 أرسل ماك الجهاز (MAC أو SN).")
     elif "السوفت" in msg:
         await update.message.reply_text("🎥 جاري تجهيز روابط السوفت...")
     elif "حلول" in msg:
@@ -26,7 +26,7 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif "الدعم" in msg:
         await update.message.reply_text("📞 تواصل: @ProTechSupportTeam")
     elif "فنيين" in msg:
-        await update.message.reply_text("📍 أرسل موقعك لنرشح أقرب فني.")
+        await update.message.reply_text("📍 أحدث ملف قنوات.")
     else:
         await update.message.reply_text("❓ لم أفهم، اختر من القائمة.")
 
