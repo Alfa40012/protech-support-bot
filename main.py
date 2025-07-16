@@ -16,6 +16,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# --- ضع توكن البوت هنا ---
 BOT_TOKEN = "7579051023:AAHO56s_EMzenHUKPpuojzJf-KRKykJC10I"
 
 # --- مراحل الـ ConversationHandler ---
@@ -80,7 +81,7 @@ SOFT_FILES = {
 
 IPTV_SERVERS = ["Nova", "Aroma", "Protech"]
 
-SUPPORT_CHANNEL_ID = -1001234567890  # عوضا عن معرف قناتك الخاصة
+SUPPORT_CHANNEL_ID = -1001234567890  # عوضا عن معرف قناتك أو تيليجرام خاص
 
 WA_LINK = "https://wa.me/message/2JZ4HHC5JOSFC1"
 
@@ -183,7 +184,6 @@ async def send_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # --- Handlers ---
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
     keyboard = [
         [InlineKeyboardButton("العربية", callback_data="lang_ar")],
         [InlineKeyboardButton("English", callback_data="lang_en")],
@@ -228,121 +228,4 @@ async def language_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def any_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.text and not update.message.text.startswith("/"):
-        lang = get_user_language(update.effective_user.id)
-        text = MESSAGES[lang]["main_menu"]
-        keyboard = [
-            [
-                InlineKeyboardButton("📥 تحميل السوفت", callback_data="menu_soft"),
-                InlineKeyboardButton("📺 ملف القنوات", callback_data="menu_channels"),
-            ],
-            [InlineKeyboardButton("🎯 تفعيل الاشتراك IPTV", callback_data="menu_iptv")],
-            [InlineKeyboardButton("📝 تشخيص المشكلة / فحص الكود", callback_data="menu_diag")],
-            [
-                InlineKeyboardButton("🔧 الدعم الفني", callback_data="menu_support"),
-                InlineKeyboardButton("💬 تواصل واتساب", url=WA_LINK),
-            ],
-            [InlineKeyboardButton("📢 العروض والخصومات", callback_data="menu_offers")],
-            [InlineKeyboardButton("❓ الأسئلة الشائعة", callback_data="menu_faq")],
-        ]
-        await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
-
-
-async def menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    data = query.data
-    user_id = query.from_user.id
-    lang = get_user_language(user_id)
-
-    if data == "menu_soft":
-        keyboard = [[
-            InlineKeyboardButton(name, callback_data=f"soft_{name}") for name in SOFT_FILES.keys()
-        ]]
-        keyboard.append([InlineKeyboardButton(MESSAGES[lang]["back_menu"], callback_data="back_main")])
-        await query.edit_message_text(MESSAGES[lang]["choose_soft"], reply_markup=InlineKeyboardMarkup(keyboard))
-        return SOFT_TYPE
-
-    elif data.startswith("soft_"):
-        soft_name = data.split("_")[1]
-        link = SOFT_FILES.get(soft_name)
-        if link:
-            await query.edit_message_text(MESSAGES[lang]["send_soft"].format(link))
-        else:
-            await query.edit_message_text(MESSAGES[lang]["invalid_option"])
-        await asyncio.sleep(1)
-        # رجوع للمنيو
-        await context.bot.send_message(chat_id=query.message.chat.id, text=MESSAGES[lang]["main_menu"], reply_markup=InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton("📥 تحميل السوفت", callback_data="menu_soft"),
-                InlineKeyboardButton("📺 ملف القنوات", callback_data="menu_channels"),
-            ],
-            [InlineKeyboardButton("🎯 تفعيل الاشتراك IPTV", callback_data="menu_iptv")],
-            [
-                InlineKeyboardButton("📝 تشخيص المشكلة / فحص الكود", callback_data="menu_diag")
-            ],
-            [
-                InlineKeyboardButton("🔧 الدعم الفني", callback_data="menu_support"),
-                InlineKeyboardButton("💬 تواصل واتساب", url=WA_LINK),
-            ],
-            [InlineKeyboardButton("📢 العروض والخصومات", callback_data="menu_offers")],
-            [InlineKeyboardButton("❓ الأسئلة الشائعة", callback_data="menu_faq")],
-        ]))
-        return MAIN_MENU
-
-    elif data == "menu_channels":
-        keyboard = [[InlineKeyboardButton("تحميل ملف القنوات", url="https://mediafire.com/fakechannelfile")]]
-        keyboard.append([InlineKeyboardButton(MESSAGES[lang]["back_menu"], callback_data="back_main")])
-        await query.edit_message_text(MESSAGES[lang]["channels"], reply_markup=InlineKeyboardMarkup(keyboard))
-        return MAIN_MENU
-
-    elif data == "menu_iptv":
-        await query.edit_message_text(MESSAGES[lang]["iptv_device"])
-        return IPTV_DEVICE
-
-    elif data == "menu_diag":
-        await query.edit_message_text(MESSAGES[lang]["diag_problem"])
-        return DIAG_PROBLEM
-
-    elif data == "menu_support":
-        keyboard = [
-            [InlineKeyboardButton("💬 تواصل واتساب", url=WA_LINK)],
-            [InlineKeyboardButton(MESSAGES[lang]["back_menu"], callback_data="back_main")],
-        ]
-        await query.edit_message_text(MESSAGES[lang]["support_contact"], reply_markup=InlineKeyboardMarkup(keyboard))
-        return MAIN_MENU
-
-    elif data == "menu_offers":
-        cursor.execute("SELECT title, description FROM offers WHERE active=1")
-        offers = cursor.fetchall()
-        if offers:
-            msg = MESSAGES[lang]["offers_title"] + "\n\n"
-            for title, desc in offers:
-                msg += f"⭐ {title}\n{desc}\n\n"
-        else:
-            msg = "لا توجد عروض حالياً." if lang == "ar" else "No offers currently."
-        keyboard = [[InlineKeyboardButton(MESSAGES[lang]["back_menu"], callback_data="back_main")]]
-        await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard))
-        return MAIN_MENU
-
-    elif data == "menu_faq":
-        msg = MESSAGES[lang]["faq_title"] + "\n\n"
-        for i, faq in enumerate(FAQ_LIST, 1):
-            msg += f"{i}. {faq['question']}\n   ➡️ {faq['answer']}\n\n"
-        keyboard = [[InlineKeyboardButton(MESSAGES[lang]["back_menu"], callback_data="back_main")]]
-        await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard))
-        return MAIN_MENU
-
-    elif data == "back_main":
-        keyboard = [
-            [
-                InlineKeyboardButton("📥 تحميل السوفت", callback_data="menu_soft"),
-                InlineKeyboardButton("📺 ملف القنوات", callback_data="menu_channels"),
-            ],
-            [InlineKeyboardButton("🎯 تفعيل الاشتراك IPTV", callback_data="menu_iptv")],
-            [
-                InlineKeyboardButton("📝 تشخيص المشكلة / فحص الكود", callback_data="menu_diag")
-            ],
-            [
-                InlineKeyboardButton("🔧 الدعم الفني", callback_data="menu_support"),
-                InlineKeyboardButton("💬 تواصل واتساب", url=WA
+    if update.message.text
