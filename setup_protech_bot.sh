@@ -1,0 +1,1 @@
+setup_protech_bot.sh
