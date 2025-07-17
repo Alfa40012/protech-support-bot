@@ -1,47 +1,51 @@
 #!/bin/bash
 
-echo "✅ بدء إنشاء مفتاح SSH جديد..."
+echo "🚀 بدء تثبيت بوت ProTech..."
 
-# إنشاء مجلد SSH إن لم يكن موجودًا
-mkdir -p ~/.ssh
-chmod 700 ~/.ssh
+# تحديث النظام
+apt update && apt upgrade -y
 
-# إنشاء مفتاح جديد بدون باسورد
-ssh-keygen -t ed25519 -C "protech-bot" -f ~/.ssh/id_ed25519 -N ""
+# تثبيت Python والأدوات المطلوبة
+apt install -y python3 python3-pip git
 
-echo ""
-echo "✅ تم إنشاء مفتاح SSH بنجاح."
-echo ""
+# إنشاء مجلد البوت
+mkdir -p /root/protech-bot
+cd /root/protech-bot
 
-# عرض المفتاح العام لنسخه
-echo "⬇️ المفتاح العام الخاص بك (انسخه كاملًا):"
-echo "--------------------------------------------------"
-cat ~/.ssh/id_ed25519.pub
-echo "--------------------------------------------------"
-echo ""
-echo "📌 افتح الرابط التالي وأضف المفتاح:"
-echo "👉 https://github.com/settings/ssh/new"
-echo ""
-echo "✍️ عنوان (Title): protech-vps"
-echo "📋 ثم الصق المفتاح في خانة (Key) واحفظه"
-echo ""
+# تنزيل ملف main.py
+wget https://raw.githubusercontent.com/Alfa40012/protech-support-bot/main/main.py -O main.py
 
-read -p "اضغط Enter بعد إضافة المفتاح في GitHub..."
+# إنشاء ملف requirements.txt
+cat <<EOF > requirements.txt
+python-telegram-bot==13.15
+requests
+EOF
 
-# اختبار الاتصال بـ GitHub
-echo ""
-echo "🔁 اختبار الاتصال بـ GitHub..."
-ssh -T git@github.com
+# تثبيت المتطلبات
+pip3 install -r requirements.txt
 
-# تنزيل مستودع البوت
-echo ""
-echo "📥 جاري تحميل البوت من GitHub..."
-cd /opt
-rm -rf protech-support-bot
-git clone git@github.com:Alfa40012/protech-support-bot.git
+# إنشاء خدمة systemd للبوت
+cat <<EOF > /etc/systemd/system/protechbot.service
+[Unit]
+Description=ProTech Support Bot
+After=network.target
 
-echo ""
-echo "✅ تم تحميل البوت بنجاح في /opt/protech-support-bot"
-echo ""
-echo "👨‍💻 لتشغيل البوت: "
-echo "cd /opt/protech-support-bot && python3 main.py"
+[Service]
+ExecStart=/usr/bin/python3 /root/protech-bot/main.py
+WorkingDirectory=/root/protech-bot
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# تفعيل الخدمة وتشغيلها
+systemctl daemon-reexec
+systemctl daemon-reload
+systemctl enable protechbot
+systemctl start protechbot
+
+echo "✅ تم تشغيل بوت ProTech بنجاح!"
