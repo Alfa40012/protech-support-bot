@@ -1,96 +1,80 @@
-from telegram import (
-    Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    ReplyKeyboardRemove,
-)
-from telegram.ext import (
-    ApplicationBuilder,
-    ContextTypes,
-    CommandHandler,
-    MessageHandler,
-    CallbackQueryHandler,
-    filters,
-)
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 
-BOT_TOKEN = "7579051023:AAHO56s_EMzenHUKPpuojzJf-KRKykJC10I"
-WHATSAPP_LINK = "https://wa.me/message/2JZ4HHC5JOSFC1"
-CHANNEL_LINK = "https://t.me/ProTechSupport1Bot"
-FILE_CHANNEL = "https://www.mediafire.com/file/vm2khd0dnemy7ro/"
+BOT_TOKEN = "توكن_البوت_هنا"
 
-WELCOME_MSG = """
-👋 مرحبًا بك في بوت الدعم الفني لـ PROTECH IPTV
+# --- الردود المنسقة ---
+WELCOME_MSG = """*👋 مرحبًا بك في بوت الدعم الفني لـ PROTECH IPTV*
 
-🤖 البوت يعمل تلقائيًا وعلى مدار الساعة.
-📡 إذا واجهت أي مشكلة أو تحتاج للمساعدة، اختر من القائمة بالأسفل أو أرسل كود MAC الخاص بجهازك.
+*🤖 البوت يعمل تلقائيًا وعلى مدار الساعة لخدمتك.*
 
-📍 تأكد من:
-- فصل الراوتر من الكهرباء لمدة دقيقة
-- إعادة تشغيل الجهاز
-"""
+📡 إذا واجهت أي *مشكلة* أو كنت بحاجة إلى *مساعدة*:
 
-AUTO_REPLY = """
-✅ السيرفر يعمل بكفاءة ✅
+✅ اختر من القائمة بالأسفل  
+✅ أو اكتب *اسم جهازك*  
+✅ أو أرسل *كود MAC* الخاص بجهازك
 
-يرجى التأكد من:
-1. فصل الروتر من الكهرباء لمدة دقيقة
-2. إعادة تشغيل الجهاز
-3. الانتظار قليلاً حتى يعمل السيرفر
+🔧 *نحن هنا لمساعدتك بكل احترافية!*"""
 
-📞 إذا استمرت المشكلة ➜ تواصل معنا عبر واتساب 👇
-"""
+CHANNELS_MSG = """⚠️ *حصــــــرياً وقبل أي حـــــد* ⚠️
+*ملف قنــــــوات صن بلـــــص الأســـــطوري*
+2507L - 1507DK - 1506TV-HV
 
-def get_main_menu():
-    keyboard = [
-        [InlineKeyboardButton("📡 فحص الكود / الدعم الفني", callback_data="support")],
-        [InlineKeyboardButton("📥 تحميل ملف القنوات", callback_data="channels")],
-        [InlineKeyboardButton("💳 تجديد الاشتراك", callback_data="renew")],
-        [InlineKeyboardButton("🛒 شراء الأجهزة أونلاين", url="https://rafal.giize.com/")],
-        [InlineKeyboardButton("💬 تواصل مع الدعم على واتساب", url=WHATSAPP_LINK)],
-    ]
-    return InlineKeyboardMarkup(keyboard)
+📡 *تحديث ناري بكل جديد على جميع الأقمار*
+*وأحدث القنوات على نايل سات 2025*
+
+✅ *الأنظمة المدعومة:*
+✔️ نايل سات عربي ثابت  
+✔️ متحرك عربي لجميع الاتجاهات
+
+◀️ *تمت إضافة القنوات الجديدة بالتحديث:*
+✨ قناة العاصمة الجديدة — جودة ممتازة  
+✨ قناة الثانية HD — نقاء غير مسبوق  
+✨ مصر دراما MBC — لكل عشاق الدراما
+
+🔻 *ملف نايل سات عربي:*  
+🔗 https://www.up-4ever.net/c3subfw3rmvv
+
+🔻 *ملف متحرك عربي:*  
+🔗 https://www.up-4ever.net/57bdh63208k7
+
+⏳ *نزّل التحديث قبل الكل وكن دائمًا سابق بخطوة!*"""
+
+SOFTWARE_OPTIONS = InlineKeyboardMarkup([
+    [InlineKeyboardButton("🔽 بروتيك P10W", url="https://www.mediafire.com/folder/9jv31ni4w4ayy/PROTECH")],
+    [InlineKeyboardButton("🔽 بروتيك P10", url="https://www.mediafire.com/folder/9jv31ni4w4ayy/PROTECH")],
+    [InlineKeyboardButton("🔽 بروتيك P04W", url="https://www.mediafire.com/folder/9jv31ni4w4ayy/PROTECH")],
+    [InlineKeyboardButton("🔽 بروتيك P08W", url="https://www.mediafire.com/folder/9jv31ni4w4ayy/PROTECH")],
+])
+
+MAIN_MENU = InlineKeyboardMarkup([
+    [InlineKeyboardButton("📡 فحص الكود / الدعم الفني", callback_data="support")],
+    [InlineKeyboardButton("📥 تحميل ملف القنوات", callback_data="channels")],
+    [InlineKeyboardButton("⬇️ تحميل السوفت وير", callback_data="software")],
+    [InlineKeyboardButton("💳 تجديد الاشتراك", url="https://wa.me/p/10036792293099711/201098256570")],
+    [InlineKeyboardButton("🛒 شراء الأجهزة أونلاين", url="https://wa.me/c/201098256570")],
+    [InlineKeyboardButton("💬 التواصل مع الدعم — واتساب", url="https://wa.me/201098256570")],
+])
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_photo(
-        photo="https://i.top4top.io/p_3485uoxkw0.jpg",
-        caption=WELCOME_MSG,
-        reply_markup=get_main_menu()
-    )
-
-async def handle_mac(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.strip().upper()
-    if any(x in text for x in ["MAC", ":", "-"]) or len(text) >= 10:
-        await update.message.reply_text(AUTO_REPLY)
-        await update.message.reply_text("💬 يمكنك التواصل مباشرة مع الدعم عبر واتساب:", reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("🔗 اضغط هنا", url=WHATSAPP_LINK)]
-        ]))
-    else:
-        await update.message.reply_text("🛠 من فضلك أرسل كود MAC أو اختر الخدمة من القائمة:", reply_markup=get_main_menu())
+    await update.message.reply_text(WELCOME_MSG, parse_mode="Markdown", reply_markup=MAIN_MENU)
 
 async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
     if query.data == "support":
-        await query.edit_message_text(
-            "🛠 من فضلك أرسل نوع الجهاز وكود MAC الخاص بك وسيتم الرد عليك مباشرة.\n\nمثال:\n✅ نوع الجهاز: REDLINE\n✅ MAC: 162CBD932D7A"
-        )
+        # تحويل مباشر إلى واتساب
+        await query.message.reply_text("💬 تواصل الآن مع الدعم الفني عبر واتساب:", reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("📲 اضغط هنا", url="https://wa.me/201098256570")]
+        ]))
     elif query.data == "channels":
-        await query.edit_message_text(
-            f"📥 لتحميل أحدث ملف قنوات نايل سات:\n[اضغط هنا]({FILE_CHANNEL})",
-            parse_mode="Markdown"
-        )
-    elif query.data == "renew":
-        await query.edit_message_text(
-            "💳 لتجديد الاشتراك:\n1. أرسل كود MAC الخاص بك\n2. سيتم مراجعة الاشتراك وإبلاغك بالتجديد\n\nأو تواصل على واتساب:",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("💬 واتساب للتجديد", url=WHATSAPP_LINK)]
-            ])
-        )
+        await query.message.reply_text(CHANNELS_MSG, parse_mode="Markdown")
+    elif query.data == "software":
+        await query.message.reply_text("⬇️ اختر موديل جهازك لتحميل السوفت وير المناسب:", reply_markup=SOFTWARE_OPTIONS)
 
 if __name__ == "__main__":
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(handle_buttons))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_mac))
     app.run_polling()
