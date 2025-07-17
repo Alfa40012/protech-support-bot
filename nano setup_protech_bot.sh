@@ -1,51 +1,74 @@
 #!/bin/bash
 
-echo "🚀 بدء تثبيت بوت ProTech..."
+echo "🚀 بدء تثبيت بوت PROTECH IPTV..."
 
-# تحديث النظام
-apt update && apt upgrade -y
+# 1. تحديث النظام
+sudo apt update && sudo apt upgrade -y
 
-# تثبيت Python والأدوات المطلوبة
-apt install -y python3 python3-pip git
+# 2. تثبيت Python وPIP
+sudo apt install python3 python3-pip -y
 
-# إنشاء مجلد البوت
-mkdir -p /root/protech-bot
-cd /root/protech-bot
+# 3. إنشاء مجلد البوت
+mkdir -p ~/protech_bot
+cd ~/protech_bot
 
-# تنزيل ملف main.py
-wget https://raw.githubusercontent.com/Alfa40012/protech-support-bot/main/main.py -O main.py
+# 4. إنشاء ملف البوت
+cat <<EOF > bot.py
+import telebot
 
-# إنشاء ملف requirements.txt
-cat <<EOF > requirements.txt
-python-telegram-bot==13.15
-requests
+BOT_TOKEN = '7579051023:AAHO56s_EMzenHUKPpuojzJf-KRKykJC10I'
+bot = telebot.TeleBot(BOT_TOKEN)
+
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.row('📡 تفعيل IPTV', '📥 تحميل السوفت')
+    markup.row('📶 ملف القنوات', '❓ تشخيص المشكلة')
+    markup.row('🧑‍💻 التواصل مع الدعم', '💬 واتساب مباشر')
+    bot.send_message(message.chat.id,
+                     "👋 أهلاً بك في دعم PROTECH IPTV\n\nاختر من القائمة التالية 👇",
+                     reply_markup=markup)
+
+@bot.message_handler(func=lambda m: True)
+def reply_all(message):
+    if message.text == '📡 تفعيل IPTV':
+        bot.send_message(message.chat.id, "🔧 من فضلك أرسل نوع الجهاز واسم السيرفر المطلوب تفعيله.")
+    elif message.text == '📥 تحميل السوفت':
+        bot.send_message(message.chat.id, "📦 حمل آخر سوفت من هنا:\nhttps://www.mediafire.com/folder/...")  # غيّر الرابط
+    elif message.text == '📶 ملف القنوات':
+        bot.send_message(message.chat.id, "🛰️ حمل ملف القنوات نايل سات:\nhttps://www.mediafire.com/file/vm2khd0dnemy7ro/...")
+    elif message.text == '❓ تشخيص المشكلة':
+        bot.send_message(message.chat.id, "💡 من فضلك أرسل نوع الجهاز والمشكلة بالتفصيل.")
+    elif message.text == '🧑‍💻 التواصل مع الدعم':
+        bot.send_message(message.chat.id, "🎧 تواصل مع الدعم عبر Telegram: @ProTechSupport1")
+    elif message.text == '💬 واتساب مباشر':
+        bot.send_message(message.chat.id, "📲 تواصل معنا عبر واتساب:\nhttps://wa.me/message/2JZ4HHC5JOSFC1")
+    else:
+        bot.send_message(message.chat.id, "❗ لم أفهم الأمر، يرجى اختيار من القائمة.")
+
+bot.polling(none_stop=True)
 EOF
 
-# تثبيت المتطلبات
-pip3 install -r requirements.txt
-
-# إنشاء خدمة systemd للبوت
-cat <<EOF > /etc/systemd/system/protechbot.service
+# 5. إنشاء ملف تشغيل تلقائي باستخدام systemd
+sudo tee /etc/systemd/system/protechbot.service > /dev/null <<EOL
 [Unit]
-Description=ProTech Support Bot
+Description=ProTech IPTV Support Bot
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python3 /root/protech-bot/main.py
-WorkingDirectory=/root/protech-bot
-StandardOutput=inherit
-StandardError=inherit
+ExecStart=/usr/bin/python3 /home/$USER/protech_bot/bot.py
+WorkingDirectory=/home/$USER/protech_bot
 Restart=always
-User=root
+User=$USER
 
 [Install]
 WantedBy=multi-user.target
-EOF
+EOL
 
-# تفعيل الخدمة وتشغيلها
-systemctl daemon-reexec
-systemctl daemon-reload
-systemctl enable protechbot
-systemctl start protechbot
+# 6. تفعيل الخدمة
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl enable protechbot
+sudo systemctl start protechbot
 
-echo "✅ تم تشغيل بوت ProTech بنجاح!"
+echo "✅ تم تشغيل بوت PROTECH IPTV بنجاح 🎉"
