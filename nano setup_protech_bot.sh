@@ -1,74 +1,96 @@
-#!/bin/bash
+import logging
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 
-echo "🚀 بدء تثبيت بوت PROTECH IPTV..."
+# إعدادات البوت
+BOT_TOKEN = "7579051023:AAHO56s_EMzenHUKPpuojzJf-KRKykJC10I"
+CHANNELS_FILE = "assets/latest_channels.txt"
+WHATSAPP_URL = "https://wa.me/message/2JZ4HHC5JOSFC1"
 
-# 1. تحديث النظام
-sudo apt update && sudo apt upgrade -y
+logging.basicConfig(level=logging.INFO)
 
-# 2. تثبيت Python وPIP
-sudo apt install python3 python3-pip -y
+# ✅ رسالة الترحيب
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    buttons = [
+        [InlineKeyboardButton("🇸🇦 عربي", callback_data="lang_ar")],
+        [InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")]
+    ]
+    await update.message.reply_text("Welcome to PROTECH Support Bot\nيرجى اختيار اللغة / Please choose language:", reply_markup=InlineKeyboardMarkup(buttons))
 
-# 3. إنشاء مجلد البوت
-mkdir -p ~/protech_bot
-cd ~/protech_bot
+# ✅ اختيار اللغة
+async def choose_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
 
-# 4. إنشاء ملف البوت
-cat <<EOF > bot.py
-import telebot
+    lang = query.data
+    context.user_data["lang"] = lang
 
-BOT_TOKEN = '7579051023:AAHO56s_EMzenHUKPpuojzJf-KRKykJC10I'
-bot = telebot.TeleBot(BOT_TOKEN)
-
-@bot.message_handler(commands=['start'])
-def send_welcome(message):
-    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row('📡 تفعيل IPTV', '📥 تحميل السوفت')
-    markup.row('📶 ملف القنوات', '❓ تشخيص المشكلة')
-    markup.row('🧑‍💻 التواصل مع الدعم', '💬 واتساب مباشر')
-    bot.send_message(message.chat.id,
-                     "👋 أهلاً بك في دعم PROTECH IPTV\n\nاختر من القائمة التالية 👇",
-                     reply_markup=markup)
-
-@bot.message_handler(func=lambda m: True)
-def reply_all(message):
-    if message.text == '📡 تفعيل IPTV':
-        bot.send_message(message.chat.id, "🔧 من فضلك أرسل نوع الجهاز واسم السيرفر المطلوب تفعيله.")
-    elif message.text == '📥 تحميل السوفت':
-        bot.send_message(message.chat.id, "📦 حمل آخر سوفت من هنا:\nhttps://www.mediafire.com/folder/...")  # غيّر الرابط
-    elif message.text == '📶 ملف القنوات':
-        bot.send_message(message.chat.id, "🛰️ حمل ملف القنوات نايل سات:\nhttps://www.mediafire.com/file/vm2khd0dnemy7ro/...")
-    elif message.text == '❓ تشخيص المشكلة':
-        bot.send_message(message.chat.id, "💡 من فضلك أرسل نوع الجهاز والمشكلة بالتفصيل.")
-    elif message.text == '🧑‍💻 التواصل مع الدعم':
-        bot.send_message(message.chat.id, "🎧 تواصل مع الدعم عبر Telegram: @ProTechSupport1")
-    elif message.text == '💬 واتساب مباشر':
-        bot.send_message(message.chat.id, "📲 تواصل معنا عبر واتساب:\nhttps://wa.me/message/2JZ4HHC5JOSFC1")
+    if lang == "lang_ar":
+        text = "مرحبًا بك في بوت دعم PROTECH.\nاختر من القائمة:"
+        buttons = [
+            [InlineKeyboardButton("📡 ملف القنوات", callback_data="channels")],
+            [InlineKeyboardButton("📥 تحميل السوفت", callback_data="software")],
+            [InlineKeyboardButton("🔁 تجديد الاشتراك", callback_data="renew")],
+            [InlineKeyboardButton("🛠️ تشخيص مشاكل IPTV/النت", callback_data="diagnose")],
+            [InlineKeyboardButton("📞 دعم واتساب", url=WHATSAPP_URL)]
+        ]
     else:
-        bot.send_message(message.chat.id, "❗ لم أفهم الأمر، يرجى اختيار من القائمة.")
+        text = "Welcome to PROTECH Support Bot.\nPlease choose from the menu:"
+        buttons = [
+            [InlineKeyboardButton("📡 Channels File", callback_data="channels")],
+            [InlineKeyboardButton("📥 Software Download", callback_data="software")],
+            [InlineKeyboardButton("🔁 Renew Subscription", callback_data="renew")],
+            [InlineKeyboardButton("🛠️ Diagnose IPTV/Internet", callback_data="diagnose")],
+            [InlineKeyboardButton("📞 WhatsApp Support", url=WHATSAPP_URL)]
+        ]
 
-bot.polling(none_stop=True)
-EOF
+    await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(buttons))
 
-# 5. إنشاء ملف تشغيل تلقائي باستخدام systemd
-sudo tee /etc/systemd/system/protechbot.service > /dev/null <<EOL
-[Unit]
-Description=ProTech IPTV Support Bot
-After=network.target
+# ✅ الرد على الأوامر
+async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
 
-[Service]
-ExecStart=/usr/bin/python3 /home/$USER/protech_bot/bot.py
-WorkingDirectory=/home/$USER/protech_bot
-Restart=always
-User=$USER
+    choice = query.data
+    lang = context.user_data.get("lang", "lang_ar")
 
-[Install]
-WantedBy=multi-user.target
-EOL
+    if choice == "channels":
+        with open(CHANNELS_FILE, "r", encoding="utf-8") as f:
+            content = f.read()
+        await query.message.reply_text(f"📡 أحدث ملف قنوات نايل سات:\n\n{content}")
 
-# 6. تفعيل الخدمة
-sudo systemctl daemon-reexec
-sudo systemctl daemon-reload
-sudo systemctl enable protechbot
-sudo systemctl start protechbot
+    elif choice == "software":
+        await query.message.reply_text("📥 يرجى إرسال موديل الجهاز مثل: PROTECH PW10")
 
-echo "✅ تم تشغيل بوت PROTECH IPTV بنجاح 🎉"
+    elif choice == "renew":
+        msg = "للتجديد، أرسل لنا صورة الاشتراك القديم أو MAC." if lang == "lang_ar" else "To renew, send us your old subscription or MAC."
+        await query.message.reply_text(msg)
+
+    elif choice == "diagnose":
+        msg = "🚀 لفحص مشاكل الإنترنت أو IPTV، أرسل صورة من القناة أو رقم MAC أو وصف المشكلة." if lang == "lang_ar" else "🚀 To diagnose issues, send channel image, MAC or problem details."
+        await query.message.reply_text(msg)
+
+# ✅ الرد على MAC أو موديل الجهاز
+async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text.strip().upper()
+    if "PROTECH PW10" in text:
+        await update.message.reply_text("✅ لتحميل السوفت الخاص بجهاز PROTECH PW10:\n👇 اضغط هنا:\nhttps://www.mediafire.com/file/xxxxxxx")
+
+    elif len(text) == 12 and ":" not in text:
+        await update.message.reply_text(f"🔍 تم استلام MAC: {text}\nسيتم فحصه وإبلاغك بالنتيجة قريبًا.")
+
+    else:
+        await update.message.reply_text("✅ تم استلام رسالتك، وسيتم الرد عليك من الدعم قريبًا.")
+
+# ✅ تشغيل البوت
+def main():
+    app = Application.builder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(choose_language, pattern="^lang_"))
+    app.add_handler(CallbackQueryHandler(handle_menu, pattern="^(channels|software|renew|diagnose)$"))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+    print("✅ BOT is running...")
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
