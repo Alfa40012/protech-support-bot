@@ -1,88 +1,96 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import (
+    Update,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    ReplyKeyboardRemove,
+)
 from telegram.ext import (
     ApplicationBuilder,
-    CommandHandler,
-    CallbackQueryHandler,
-    MessageHandler,
     ContextTypes,
-    filters
+    CommandHandler,
+    MessageHandler,
+    CallbackQueryHandler,
+    filters,
 )
 
-TOKEN = "7579051023:AAHO56s_EMzenHUKPpuojzJf-KRKykJC10I"
-
-WELCOME_TEXT = "👋 أهلاً بك في خدمة الدعم الفني لشركة PROTECH IPTV.\nيرجى اختيار الخدمة المطلوبة من القائمة التالية 👇"
-
-# روابط الملفات
-SOFTWARE_LINK = "https://www.mediafire.com/file/vm2khd0dnemy7ro/latest-protech-nilesat.bin/file"
-CHANNELS_FILE_LINK = "https://www.mediafire.com/file/vm2khd0dnemy7ro/latest-channels-protech.bin/file"
+BOT_TOKEN = "7579051023:AAHO56s_EMzenHUKPpuojzJf-KRKykJC10I"
 WHATSAPP_LINK = "https://wa.me/message/2JZ4HHC5JOSFC1"
+CHANNEL_LINK = "https://t.me/ProTechSupport1Bot"
+FILE_CHANNEL = "https://www.mediafire.com/file/vm2khd0dnemy7ro/"
 
-# المنيو منظمة بشكل أفقي وجميل
-MAIN_MENU = [
-    [
-        InlineKeyboardButton("📥 سوفت PROTECH PW10", callback_data="download_soft"),
-        InlineKeyboardButton("📡 ملف قنوات", callback_data="channels")
-    ],
-    [
-        InlineKeyboardButton("📺 تفعيل IPTV", callback_data="iptv_activate"),
-        InlineKeyboardButton("🧪 فحص كود MAC", callback_data="check_mac")
-    ],
-    [
-        InlineKeyboardButton("❓ مشاكل IPTV أو النت", callback_data="diagnose")
-    ],
-    [
-        InlineKeyboardButton("📞 تواصل مع الدعم عبر واتساب", url=WHATSAPP_LINK)
+WELCOME_MSG = """
+👋 مرحبًا بك في بوت الدعم الفني لـ PROTECH IPTV
+
+🤖 البوت يعمل تلقائيًا وعلى مدار الساعة.
+📡 إذا واجهت أي مشكلة أو تحتاج للمساعدة، اختر من القائمة بالأسفل أو أرسل كود MAC الخاص بجهازك.
+
+📍 تأكد من:
+- فصل الراوتر من الكهرباء لمدة دقيقة
+- إعادة تشغيل الجهاز
+"""
+
+AUTO_REPLY = """
+✅ السيرفر يعمل بكفاءة ✅
+
+يرجى التأكد من:
+1. فصل الروتر من الكهرباء لمدة دقيقة
+2. إعادة تشغيل الجهاز
+3. الانتظار قليلاً حتى يعمل السيرفر
+
+📞 إذا استمرت المشكلة ➜ تواصل معنا عبر واتساب 👇
+"""
+
+def get_main_menu():
+    keyboard = [
+        [InlineKeyboardButton("📡 فحص الكود / الدعم الفني", callback_data="support")],
+        [InlineKeyboardButton("📥 تحميل ملف القنوات", callback_data="channels")],
+        [InlineKeyboardButton("💳 تجديد الاشتراك", callback_data="renew")],
+        [InlineKeyboardButton("🛒 شراء الأجهزة أونلاين", url="https://rafal.giize.com/")],
+        [InlineKeyboardButton("💬 تواصل مع الدعم على واتساب", url=WHATSAPP_LINK)],
     ]
-]
+    return InlineKeyboardMarkup(keyboard)
 
-# الردود حسب اختيار المستخدم
-async def send_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = InlineKeyboardMarkup(MAIN_MENU)
-    if update.message:
-        await update.message.reply_text(WELCOME_TEXT, reply_markup=keyboard)
-    elif update.callback_query:
-        await update.callback_query.edit_message_text(WELCOME_TEXT, reply_markup=keyboard)
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_photo(
+        photo="https://i.top4top.io/p_3485uoxkw0.jpg",
+        caption=WELCOME_MSG,
+        reply_markup=get_main_menu()
+    )
 
-# لما يضغط المستخدم على زر
+async def handle_mac(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text.strip().upper()
+    if any(x in text for x in ["MAC", ":", "-"]) or len(text) >= 10:
+        await update.message.reply_text(AUTO_REPLY)
+        await update.message.reply_text("💬 يمكنك التواصل مباشرة مع الدعم عبر واتساب:", reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("🔗 اضغط هنا", url=WHATSAPP_LINK)]
+        ]))
+    else:
+        await update.message.reply_text("🛠 من فضلك أرسل كود MAC أو اختر الخدمة من القائمة:", reply_markup=get_main_menu())
+
 async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    if query.data == "download_soft":
-        await query.edit_message_text(f"⬇️ لتحميل السوفت:\n{SOFTWARE_LINK}")
+    if query.data == "support":
+        await query.edit_message_text(
+            "🛠 من فضلك أرسل نوع الجهاز وكود MAC الخاص بك وسيتم الرد عليك مباشرة.\n\nمثال:\n✅ نوع الجهاز: REDLINE\n✅ MAC: 162CBD932D7A"
+        )
     elif query.data == "channels":
-        await query.edit_message_text(f"📺 لتحميل ملف القنوات:\n{CHANNELS_FILE_LINK}")
-    elif query.data == "check_mac":
-        await query.edit_message_text("🔍 من فضلك أرسل كود MAC الخاص بجهازك.")
-    elif query.data == "diagnose":
-        await query.edit_message_text("🧪 من فضلك صف مشكلتك وسنقوم بمساعدتك.")
-    elif query.data == "iptv_activate":
-        await query.edit_message_text("📺 لتفعيل IPTV، من فضلك أرسل:\n1- نوع الجهاز\n2- اسم السيرفر المراد التفعيل عليه")
-    else:
-        await send_main_menu(update, context)
-
-# لو أرسل المستخدم رسالة نصية (مثل كود MAC أو شرح مشكلة)
-async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.strip()
-
-    # فحص كود MAC
-    if ":" in text or len(text) == 12:
-        await update.message.reply_text("✅ تم استلام كود MAC، سيتم فحصه وربط الجهاز بالخدمة.")
-    elif any(x in text.lower() for x in ["iptv", "server", "protech", "pw10", "nova"]):
-        await update.message.reply_text("📌 تم استلام معلومات التفعيل، سيتم التحقق والتفعيل خلال دقائق.")
-    else:
-        await update.message.reply_text("📨 شكراً لتواصلك، سيتم الرد عليك من الدعم الفني قريباً.")
-
-# البرنامج الأساسي
-def main():
-    app = ApplicationBuilder().token(TOKEN).build()
-
-    app.add_handler(CommandHandler("start", send_main_menu))  # start
-    app.add_handler(CallbackQueryHandler(handle_buttons))      # منيو الأزرار
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))  # الرسائل النصية
-
-    print("✅ البوت شغال...")
-    app.run_polling()
+        await query.edit_message_text(
+            f"📥 لتحميل أحدث ملف قنوات نايل سات:\n[اضغط هنا]({FILE_CHANNEL})",
+            parse_mode="Markdown"
+        )
+    elif query.data == "renew":
+        await query.edit_message_text(
+            "💳 لتجديد الاشتراك:\n1. أرسل كود MAC الخاص بك\n2. سيتم مراجعة الاشتراك وإبلاغك بالتجديد\n\nأو تواصل على واتساب:",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("💬 واتساب للتجديد", url=WHATSAPP_LINK)]
+            ])
+        )
 
 if __name__ == "__main__":
-    main()
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(handle_buttons))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_mac))
+    app.run_polling()
