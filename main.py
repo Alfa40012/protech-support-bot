@@ -1,80 +1,108 @@
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+# Bot by ProTech IPTV - Telegram: @ProTechSupport1Bot
 
-BOT_TOKEN = "توكن_البوت_هنا"
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 
-# --- الردود المنسقة ---
-WELCOME_MSG = """*👋 مرحبًا بك في بوت الدعم الفني لـ PROTECH IPTV*
+TOKEN = "7579051023:AAHO56s_EMzenHUKPpuojzJf-KRKykJC10I"
 
-*🤖 البوت يعمل تلقائيًا وعلى مدار الساعة لخدمتك.*
+# روابط ثابتة
+WHATSAPP_LINK = "https://wa.me/message/2JZ4HHC5JOSFC1"
+SOFT_URL = "https://www.mediafire.com/file/07cudmx5w3x65tb/SOFT_PROTECH.rar/file"
+CHANNEL_URL = "https://t.me/ProtechIPTV"
+FILE_CHANNEL_URL = "https://www.mediafire.com/file/vm2khd0dnemy7ro/Nile_Sat_Arabic_TP_PROTECH.abs/file"
 
-📡 إذا واجهت أي *مشكلة* أو كنت بحاجة إلى *مساعدة*:
+# رسائل جاهزة
+WELCOME_MSG = """👋 مرحبًا بك في بوت دعم PROTECH  الرسمي!
 
-✅ اختر من القائمة بالأسفل  
-✅ أو اكتب *اسم جهازك*  
-✅ أو أرسل *كود MAC* الخاص بجهازك
+🤖 البوت يعمل تلقائيًا 24 ساعة.
 
-🔧 *نحن هنا لمساعدتك بكل احترافية!*"""
+📍 استخدم الأزرار التالية للحصول على الخدمات:
+"""
 
-CHANNELS_MSG = """⚠️ *حصــــــرياً وقبل أي حـــــد* ⚠️
-*ملف قنــــــوات صن بلـــــص الأســـــطوري*
-2507L - 1507DK - 1506TV-HV
+HELP_MSG = """🆘 *طريقة استخدام البوت:*
 
-📡 *تحديث ناري بكل جديد على جميع الأقمار*
-*وأحدث القنوات على نايل سات 2025*
+• اختر من القائمة الخدمة التي تحتاجها.
+• أو أرسل كود MAC أو اسم جهازك مباشرة.
+• للتواصل مع الدعم، اضغط على زر واتساب.
 
-✅ *الأنظمة المدعومة:*
-✔️ نايل سات عربي ثابت  
-✔️ متحرك عربي لجميع الاتجاهات
+📌 البوت يعمل 24/7 لخدمتك.
 
-◀️ *تمت إضافة القنوات الجديدة بالتحديث:*
-✨ قناة العاصمة الجديدة — جودة ممتازة  
-✨ قناة الثانية HD — نقاء غير مسبوق  
-✨ مصر دراما MBC — لكل عشاق الدراما
+*PROTECH IPTV — نخدمك بكل احترافية*
+"""
 
-🔻 *ملف نايل سات عربي:*  
-🔗 https://www.up-4ever.net/c3subfw3rmvv
+CHANNEL_MSG = f"""📡 *ملف القنوات - نايل سات عربي* 
 
-🔻 *ملف متحرك عربي:*  
-🔗 https://www.up-4ever.net/57bdh63208k7
+🔹 يحتوي على جميع القنوات المحدثة بجودة عالية.
 
-⏳ *نزّل التحديث قبل الكل وكن دائمًا سابق بخطوة!*"""
+📥 لتحميل الملف اضغط على الزر أدناه.
+"""
 
-SOFTWARE_OPTIONS = InlineKeyboardMarkup([
-    [InlineKeyboardButton("🔽 بروتيك P10W", url="https://www.mediafire.com/folder/9jv31ni4w4ayy/PROTECH")],
-    [InlineKeyboardButton("🔽 بروتيك P10", url="https://www.mediafire.com/folder/9jv31ni4w4ayy/PROTECH")],
-    [InlineKeyboardButton("🔽 بروتيك P04W", url="https://www.mediafire.com/folder/9jv31ni4w4ayy/PROTECH")],
-    [InlineKeyboardButton("🔽 بروتيك P08W", url="https://www.mediafire.com/folder/9jv31ni4w4ayy/PROTECH")],
-])
+SOFT_MSG = """🛠️ *تحديث السوفت وير الرسمي لأجهزة PROTECH* 
 
-MAIN_MENU = InlineKeyboardMarkup([
-    [InlineKeyboardButton("📡 فحص الكود / الدعم الفني", callback_data="support")],
-    [InlineKeyboardButton("📥 تحميل ملف القنوات", callback_data="channels")],
-    [InlineKeyboardButton("⬇️ تحميل السوفت وير", callback_data="software")],
-    [InlineKeyboardButton("💳 تجديد الاشتراك", url="https://wa.me/p/10036792293099711/201098256570")],
-    [InlineKeyboardButton("🛒 شراء الأجهزة أونلاين", url="https://wa.me/c/201098256570")],
-    [InlineKeyboardButton("💬 التواصل مع الدعم — واتساب", url="https://wa.me/201098256570")],
-])
+📦 يشمل:
+- دعم كامل لأحدث القنوات
+- تحسين الأداء وحل مشاكل التهنيج
+- تحديثات تلقائية مستقبلًا
 
+📥 اضغط الزر أدناه لتحميل السوفت."""
+ 
+# منيو رئيسية
+def main_menu():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("✅ فحص الكود / الدعم الفني", url=WHATSAPP_LINK)],
+        [InlineKeyboardButton("📡 ملف القنوات", callback_data="channels")],
+        [InlineKeyboardButton("🛠️ سوفت الجهاز", callback_data="soft")],
+        [InlineKeyboardButton("ℹ️ مساعدة", callback_data="help")],
+    ])
+
+# دالة البدء
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(WELCOME_MSG, parse_mode="Markdown", reply_markup=MAIN_MENU)
+    await update.message.reply_text(WELCOME_MSG, reply_markup=main_menu())
 
-async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# دالة المساعدة
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(HELP_MSG, parse_mode="Markdown")
+
+# استقبال أي MAC أو اسم جهاز
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text.strip()
+    if len(text) >= 10:
+        await update.message.reply_text(f"""📩 تم استلام الكود / اسم الجهاز:
+
+`{text}`
+
+🧑‍💻 سيتم مراجعته من الدعم الفني.
+
+للتواصل المباشر:
+👉 [اضغط هنا]({WHATSAPP_LINK})""", parse_mode="Markdown")
+    else:
+        await update.message.reply_text("📌 برجاء إرسال كود الجهاز أو اسم الجهاز بشكل صحيح.")
+
+# معالجة الضغط على الأزرار
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
+    data = query.data
     await query.answer()
 
-    if query.data == "support":
-        # تحويل مباشر إلى واتساب
-        await query.message.reply_text("💬 تواصل الآن مع الدعم الفني عبر واتساب:", reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("📲 اضغط هنا", url="https://wa.me/201098256570")]
-        ]))
-    elif query.data == "channels":
-        await query.message.reply_text(CHANNELS_MSG, parse_mode="Markdown")
-    elif query.data == "software":
-        await query.message.reply_text("⬇️ اختر موديل جهازك لتحميل السوفت وير المناسب:", reply_markup=SOFTWARE_OPTIONS)
+    if data == "channels":
+        await query.message.reply_text(CHANNEL_MSG, reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("📥 تحميل الملف", url=FILE_CHANNEL_URL)]
+        ]), parse_mode="Markdown")
+    elif data == "soft":
+        await query.message.reply_text(SOFT_MSG, reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("📥 تحميل السوفت", url=SOFT_URL)]
+        ]), parse_mode="Markdown")
+    elif data == "help":
+        await query.message.reply_text(HELP_MSG, parse_mode="Markdown")
 
+# تشغيل البوت
 if __name__ == "__main__":
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app = ApplicationBuilder().token(TOKEN).build()
+    
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(handle_buttons))
+    app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(CallbackQueryHandler(button_handler))
+
+    print("🤖 ProTechSupport1Bot is running 24/7...")
     app.run_polling()
