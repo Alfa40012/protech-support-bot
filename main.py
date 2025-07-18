@@ -1,9 +1,6 @@
-from telegram import (
-    Update, ReplyKeyboardMarkup, KeyboardButton, InputMediaPhoto
-)
-from telegram.ext import (
-    Application, CommandHandler, MessageHandler, filters, ContextTypes
-)
+from aiogram import Bot, Dispatcher, types, executor
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+import logging
 
 # بيانات البوت
 TOKEN = "7579051023:AAHO56s_EMzenHUKPpuojzJf-KRKykJC10I"
@@ -11,54 +8,73 @@ ADMIN_ID = 907876903
 WELCOME_IMAGE = "https://g.top4top.io/p_3486pis4c0.jpg"
 WHATSAPP_LINK = "https://wa.me/message/2JZ4HHC5JOSFC1"
 
-# قائمة الاختيارات الرئيسية
-main_menu = [
-    [KeyboardButton("🔧 مشاكل السوفت")],
-    [KeyboardButton("📺 موديل الرسيفر")],
-    [KeyboardButton("🌐 روابط القنوات")]
-]
-menu_markup = ReplyKeyboardMarkup(main_menu, resize_keyboard=True)
+# إعداد البوت
+logging.basicConfig(level=logging.INFO)
+bot = Bot(token=TOKEN)
+dp = Dispatcher(bot)
 
-# دالة البدء
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_photo(
-        chat_id=update.effective_chat.id,
+# لوحة المفاتيح
+main_menu = ReplyKeyboardMarkup(resize_keyboard=True)
+main_menu.add("🧰 الدعم الفني", "🧾 موديلات الأجهزة")
+main_menu.add("📥 السوفت وير", "📺 ملف القنوات")
+main_menu.add("🛒 طلب اشتراك", "🌐 موقع بروتيك")
+
+# رسالة الترحيب
+welcome_caption = """
+<b>🎉 أهلاً بك في بوت بروتيك لخدمات الدعم</b>
+مرحباً بك داخل وخارج مصر، معك Support مباشر 💬
+
+🛠 خدماتنا تشمل:
+• الدعم الفني
+• موديلات الأجهزة
+• السوفت وير
+• ملفات القنوات
+• طلب اشتراك مباشر
+• الموقع الرسمي
+
+<b>👇 اختر الخدمة المطلوبة من القائمة أدناه</b>
+
+<b>Welcome to ProTech Support</b>
+We support all users in and outside Egypt 🌍
+
+⚙️ Choose from the menu below 👇
+"""
+
+# عند بدء المحادثة
+@dp.message_handler(commands=['start'])
+async def send_welcome(message: types.Message):
+    await bot.send_photo(
+        chat_id=message.chat.id,
         photo=WELCOME_IMAGE,
-        caption="مرحبًا بك في خدمة الدعم الفني 📡\nاختر من القائمة التالية 👇",
-        reply_markup=menu_markup
+        caption=welcome_caption,
+        reply_markup=main_menu,
+        parse_mode="HTML"
     )
 
-# دالة التعامل مع الرسائل
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_message = update.message.text.strip()
-    user_id = update.effective_user.id
-    user_name = update.effective_user.first_name
+# الردود على الخيارات
+@dp.message_handler()
+async def handle_buttons(message: types.Message):
+    text = message.text.strip()
 
-    # إرسال تنبيه للإدمن بكل رسالة
-    await context.bot.send_message(
-        chat_id=ADMIN_ID,
-        text=f"📩 رسالة جديدة من: {user_name} (ID: {user_id})\n\n💬 {user_message}"
-    )
-
-    # ردود على الاختيارات
-    if user_message == "🔧 مشاكل السوفت":
-        await update.message.reply_text("🛠️ من فضلك صف نوع مشكلة السوفت التي تواجهها بالتفصيل...")
-    elif user_message == "📺 موديل الرسيفر":
-        await update.message.reply_text("📝 من فضلك اكتب موديل الرسيفر الخاص بك وسنساعدك...")
-    elif user_message == "🌐 روابط القنوات":
-        await update.message.reply_text("📡 إليك بعض روابط القنوات:\n\n✅ [قناة 1](http://example.com/1)\n✅ [قناة 2](http://example.com/2)", parse_mode="Markdown")
+    if text == "🧰 الدعم الفني":
+        await message.reply("🔧 للدعم الفني، تواصل معنا عبر واتساب:\n" + WHATSAPP_LINK)
+    elif text == "🧾 موديلات الأجهزة":
+        await message.reply("📋 قائمة الموديلات المتوفرة على موقع بروتيك:\n🌐 https://protech-eg.com/models")
+    elif text == "📥 السوفت وير":
+        await message.reply("⬇️ لتحميل السوفت، زر موقعنا:\n🌐 https://protech-eg.com/firmware")
+    elif text == "📺 ملف القنوات":
+        await message.reply("📡 حمل ملف القنوات الأحدث من هنا:\n🌐 https://protech-eg.com/channels")
+    elif text == "🛒 طلب اشتراك":
+        await message.reply("🛍 لطلب الاشتراك أو التجربة:\n📱 واتساب: " + WHATSAPP_LINK)
+    elif text == "🌐 موقع بروتيك":
+        await message.reply("🌐 تفضل بزيارة موقعنا الرسمي:\nhttps://protech-eg.com")
     else:
-        await update.message.reply_text(f"❌ لم يتم التعرف على الأمر.\n💬 تواصل مع الدعم عبر واتساب:\n{WHATSAPP_LINK}")
+        await message.reply(f"""❗ عذرًا، لم أفهم اختيارك
 
-# تشغيل التطبيق
-def main():
-    app = Application.builder().token(TOKEN).build()
+📱 للتواصل المباشر عبر واتساب:
+{WHATSAPP_LINK}
+""")
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
-    print("✅ Bot is running...")
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+# بدء التنفيذ
+if __name__ == '__main__':
+    executor.start_polling(dp, skip_updates=True)
